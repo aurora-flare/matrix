@@ -3,9 +3,11 @@
 #include <PubSubClient.h>
 #include <ESP8266WiFi.h>
 #include <config.h>
+#include "matrix/matrix.h"
 
 WiFiClient espClient;
 PubSubClient client(espClient);
+LedMatrix matrix;
 
 void setup_wifi() {
     Serial.print("Connecting to ");
@@ -27,14 +29,24 @@ void setup_wifi() {
     Serial.println(WiFi.localIP());
 }
 
-void callback(char *topic, byte *payload, unsigned int length) {
+void callback(char *topic, byte *payload, int length) {
     Serial.println("Message arrived");
     Serial.print("MESSAGE SIZE:");
     Serial.println(length);
-    for (int i = 0; i < length; i++) {
-        Serial.print(payload[i]);
-        Serial.print(" ");
+    byte tmpMod;
+    byte cellIndex;
+    byte oneCellRGB[3];
+    matrix.clear();
+    for (int receivedByteIndex = 0; receivedByteIndex < length; receivedByteIndex++) {
+        tmpMod = receivedByteIndex % 3;
+        if (receivedByteIndex > 0 && tmpMod == 0) {
+            cellIndex = (receivedByteIndex / 3) - 1;
+            matrix.setColor(cellIndex, CRGB(oneCellRGB[0], oneCellRGB[1], oneCellRGB[2]));
+        }
+        oneCellRGB[tmpMod] = payload[receivedByteIndex];
     }
+    matrix.setColor(cellIndex + 1, CRGB(oneCellRGB[0], oneCellRGB[1], oneCellRGB[2]));
+    LedMatrix::redraw();
     Serial.println();
 }
 
@@ -57,6 +69,7 @@ void reconnect() {
 void setup() {
     pinMode(BUILTIN_LED, OUTPUT);     // Initialize the BUILTIN_LED pin as an output
     Serial.begin(9600);
+    matrix = LedMatrix();
     setup_wifi();
     client.setServer(MQTT_SERVER_IP, MQTT_SERVER_PORT);
     client.setCallback(callback);

@@ -21,7 +21,6 @@ void LedMatrix::redraw() {
 
 void LedMatrix::clear() {
     fill_solid(leds, N_LEDS, CRGB(0, 0, 0));
-    redraw();
 }
 
 byte LedMatrix::calculateIndex(byte height, byte width) {
